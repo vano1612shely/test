@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        .line {
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 30px solid gray;
+            position: absolute;
+            left: 240px;
+            top: 35px;
+        }
+        circle {
+            transition: 0.5s;
+        }
+        body {
+            transition: 1s;
+        }
+        .svg {
+            transition: 1s;
+            transform: rotateZ(-90deg);
+        }
+    </style>
+</head>
+<body>
+    <svg class="svg" fill="none" width="500" height="500" viewBox="0 0 35 35" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50%" cy="50%" r="15.9" style="stroke: grey; stroke-width: 0.5;"></circle>
+    </svg>
+    <div class="line"></div>
+    <input type="text" class="percent">
+    <button class="add">Add</button>
+    <button class="start">Start</button>
+
+    <script>
+        let line = 0
+        let players = []
+        document.querySelector('.add').addEventListener('click', () => {
+            const svgObj = document.querySelector('.svg')
+            if(players.length<=0) {
+                svgObj.innerHTML = ""
+            }
+            const gObj = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+            const circleObj = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+            let color = `${Math.floor(Math.random()*255)}, ${Math.floor(Math.random()*255)}, ${Math.floor(Math.random()*255)}`
+            circleObj.setAttributeNS(null,"cx", '50%');
+            circleObj.setAttributeNS(null,"cy", '50%');
+            circleObj.setAttributeNS(null,"r", 15.9);
+            circleObj.style.stroke = `rgb(${color})`
+            circleObj.style.strokeWidth = 0.5
+            circleObj.style.strokeDasharray = `${Number(document.querySelector('.percent').value)} 100`
+            circleObj.style.strokeDashoffset = `-${line}`
+            circleObj.style.boxShadow = '0 0 10px rgb(255, 0,0)'
+            svgObj.appendChild(circleObj)
+            players.push({player: color, bet: 0, percent: Number(document.querySelector('.percent').value), startPos: line})
+            line += Number(document.querySelector('.percent').value)
+        })
+
+        document.querySelector('.start').addEventListener('click', () => {
+            let random = Math.floor(Math.random()*players.length)
+            let deg = randomInteger(360/100*players[random].startPos, 360/100*players[random].startPos+360/100*players[random].percent)
+            const svgObj = document.querySelector('.svg')
+            svgObj.style.transform = `rotateZ(${-deg-90-360}deg)`
+            setTimeout(() => {
+                document.querySelector('.line').style.borderBottomColor = `rgb(${players[random].player})`
+            }, 1000)
+            setTimeout(() => {
+                clearGame()
+            }, 5000)
+        })
+
+        function clearGame() {
+            const svgObj = document.querySelector('.svg')
+            svgObj.style.transform = 'rotateZ(-90deg)'
+            svgObj.innerHTML = ""
+            players = []
+            line = 0
+        }
+
+        function randomInteger(min, max) {
+                let rand = min + Math.random() * (max - min);
+                return rand;
+            }
+    </script>
+</body>
+</html>
