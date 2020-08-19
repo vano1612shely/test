@@ -5,88 +5,166 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
+        @font-face {
+            font-family: 
+            'digital-7';
+            src: url(
+            'digital-7.ttf');
         }
-        .line {
-            border-left: 10px solid transparent;
-            border-right: 10px solid transparent;
-            border-bottom: 30px solid gray;
-            position: absolute;
-            left: 240px;
-            top: 35px;
+        .crash{
+            width: 600px;
+            height: 450px;
+            background: url('battle_c4.png') no-repeat;
+            background-size: contain;
+            background-position: center;
+            position: relative;
         }
-        circle {
-            transition: 0.5s;
+        .text {
+            font-family: 'digital-7';
+            font-size: 50px;
+            text-align: center;
+            color: #fff;
+            transition: 0.5s all;
         }
-        body {
-            transition: 1s;
+        .elite {
+            transform: translateY(-10px);
+            font-size: 70px;
         }
-        .svg {
-            transition: 1s;
-            transform: rotateZ(-90deg);
+        .panel{
+            padding-top: 13px;
+            position: relative;
+            width: 146px;
+            height: 76px;
+            top: 235px;
+            left: 225px;
+            box-sizing: border-box;
+            /* background: rgba(20,20,20, 0.7); */
+            animation: blick 2s ease infinite;
+            filter: blur(0.6px);
+        }
+        .lastCrashes {
+            width: 500px;
+            overflow-x: hidden;
+        }
+        .lastCrashes ul{
+            display: flex;
+            pointer-events: none;
+            user-select: none;
+        }
+        .lastCrashes ul li {
+            font-family: 'digital-7';
+            font-weight: bold;
+            font-size: 30px;
+            display: block;
+            color: #fff;
+            padding: 10px;
+            border-radius: 10px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }  
+        @keyframes blick {
+            0% {box-shadow: 0 0 0px rgba(250, 250, 0, 0.5);}
+            50%{box-shadow: 0 0 100px rgba(250, 250, 0, 0.5);}
+            100% {box-shadow: 0 0 0px rgba(250, 250, 0, 0.5);}
         }
     </style>
 </head>
 <body>
-    <svg class="svg" fill="none" width="500" height="500" viewBox="0 0 35 35" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="50%" cy="50%" r="15.9" style="stroke: grey; stroke-width: 0.5;"></circle>
-    </svg>
-    <div class="line"></div>
-    <input type="text" class="percent">
-    <button class="add">Add</button>
-    <button class="start">Start</button>
+    <div class="crash">
+        <div class="panel">
+            <div class="text"></div>
+        </div>
+    </div>
+    <div class="lastCrashes">
+        <ul class="crashList"></ul>
+    </div>
+    <form class="rate_block">
+        <input type="text" class="name">
+        <input type="number" class="bet">
+        <button type="submit" class="play">Поставить</button>
+    </form>    
+    <ul class="bets"></ul>
 
-    <script>
-        let line = 0
-        let players = []
-        document.querySelector('.add').addEventListener('click', () => {
-            const svgObj = document.querySelector('.svg')
-            if(players.length<=0) {
-                svgObj.innerHTML = ""
-            }
-            const gObj = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-            const circleObj = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-            let color = `${Math.floor(Math.random()*255)}, ${Math.floor(Math.random()*255)}, ${Math.floor(Math.random()*255)}`
-            circleObj.setAttributeNS(null,"cx", '50%');
-            circleObj.setAttributeNS(null,"cy", '50%');
-            circleObj.setAttributeNS(null,"r", 15.9);
-            circleObj.style.stroke = `rgb(${color})`
-            circleObj.style.strokeWidth = 0.5
-            circleObj.style.strokeDasharray = `${Number(document.querySelector('.percent').value)} 100`
-            circleObj.style.strokeDashoffset = `-${line}`
-            circleObj.style.boxShadow = '0 0 10px rgb(255, 0,0)'
-            svgObj.appendChild(circleObj)
-            players.push({player: color, bet: 0, percent: Number(document.querySelector('.percent').value), startPos: line})
-            line += Number(document.querySelector('.percent').value)
-        })
-
-        document.querySelector('.start').addEventListener('click', () => {
-            let random = Math.floor(Math.random()*players.length)
-            let deg = randomInteger(360/100*players[random].startPos, 360/100*players[random].startPos+360/100*players[random].percent)
-            const svgObj = document.querySelector('.svg')
-            svgObj.style.transform = `rotateZ(${-deg-90-360}deg)`
-            setTimeout(() => {
-                document.querySelector('.line').style.borderBottomColor = `rgb(${players[random].player})`
-            }, 1000)
-            setTimeout(() => {
-                clearGame()
-            }, 5000)
-        })
-
-        function clearGame() {
-            const svgObj = document.querySelector('.svg')
-            svgObj.style.transform = 'rotateZ(-90deg)'
-            svgObj.innerHTML = ""
-            players = []
-            line = 0
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    var socket = io();
+    let text = document.querySelector('.text')
+    let betBlock = document.querySelector('.rate_block')
+    let el = document.createElement('ul')
+    el.classList.add('crashList')
+    betBlock.addEventListener('submit', (e) => {
+        e.preventDefault()
+        let player = { name: document.querySelector('.name').value, bet: document.querySelector('.bet').value}
+        socket.emit('bet', {name: player.name, bet: player.bet})
+    })
+    socket.on('playerBet', (players) => {
+        let block = document.querySelector('.bets')
+        block.innerHTML = ""
+        for(let i = 0; i < players.bets.length; i++) {
+            let el = document.createElement('li')
+            el.innerHTML = players.bets[i].name+'  '+players.bets[i].bet
+            block.appendChild(el)
         }
+    })
+    socket.on('timer', (timer) => {
+        text.innerHTML = timer.timer
+        text.style.color = 'white'
+    })
+    socket.on('game', (game) => {
+        text.style.color = 'tomato'
+        if(game.num > 1.2) {
+            text.style.color = 'aqua'
+        } if(game.num > 1.5) {
+            text.style.color = 'blue'
+        } if(game.num > 2) {
+            text.style.color = 'purple'
+        } if(game.num > 5) {
+            text.classList.add('elite')
+            text.style.color = 'gold'
+        } 
+        text.innerHTML = game.num.toFixed(2)
+    })
+    socket.on('lastGame', (last) => {
+        console.log(last)
+        let el = document.querySelector('.crashList')
+        while(el.firstChild) {
+            el.removeChild(el.firstChild)
+        }
+        for(let i = 0; i < last.lastGame.length; i++) {    
+            createLastCrash(last.lastGame[i])
+        }
+    })
+    socket.on('crash', (crash) => {
+        text.style.color = 'red'
+        if(crash.crash >= 5) {
+            text.classList.remove('elite')            
+        }
+        text.innerHTML = crash.crash
+    })
+    
+    function createLastCrash(num) {
+        let crash = document.createElement('li')
+        crash.innerHTML = num
+        crash.style.display = 'block'
+        crash.style.background = 'tomato'
+        crash.style.boxShadow = `2px 2px 5px tomato`
+        if(num > 1.2) {
+            crash.style.background = 'aqua'
+            crash.style.boxShadow = `2px 2px 5px aqua`
+        } if(num > 1.5) {
+            crash.style.background = 'blue'
+            crash.style.boxShadow = `2px 2px 5px blue`
+        } if(num > 2) {
+            crash.style.background = 'purple'
+            crash.style.boxShadow = `2px 2px 5px purple`
+        } if(num > 5) {
+            crash.style.background = 'gold'
+            crash.style.boxShadow = `2px 2px 5px gold`
+        } 
+        el.prepend(crash) 
+        document.querySelector('.lastCrashes').append(el)
+    }
 
-        function randomInteger(min, max) {
-                let rand = min + Math.random() * (max - min);
-                return rand;
-            }
     </script>
 </body>
 </html>
